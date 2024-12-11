@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ფასის კალკულატორი</title>
+    <style>
+        @font-face {
+            font-family: 'BPG Banner ExtraSquare Caps';
+            src: url('https://cdn.webfontpath.com/bpg_banner_extrasquare_caps.woff') format('woff');
+        }
+        body {
+            font-family: 'BPG Banner ExtraSquare Caps', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .category, .subcategory, .extras, .result {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #ffb800;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .highlight {
+            color: #ff914d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ფასის კალკულატორი</h1>
+        <div class="category">
+            <label>აირჩიეთ კატეგორია:</label>
+            <input type="radio" name="category" value="PC" onclick="updateOptions()"> PC
+            <input type="radio" name="category" value="PlayStation" onclick="updateOptions()"> PlayStation<br>
+        </div>
+        <div class="subcategory" id="subcategory" style="display:none;">
+            <label>აირჩიეთ ქვეკატეგორია:</label>
+            <select id="subcategoryOptions" onchange="updateExtras()">
+                <option value="" disabled selected>აირჩიეთ</option>
+            </select>
+        </div>
+        <div class="extras" id="extras" style="display:none;">
+            <label>აირჩიეთ საათები:</label>
+            <select id="hours" onchange="updatePrice()"></select>
+            <label id="unitsLabel"></label>
+            <select id="computers" onchange="updatePrice()"></select>
+        </div>
+        <div class="result" id="result">
+            <h2>სულ ფასი: <span id="totalPrice">0₾</span></h2>
+            <p>სულ ჯამი: <span id="subtotal">0₾</span></p>
+            <p id="discountWrapper" style="display:none;" class="highlight">ფასდაკლება: <span id="discount"></span></p>
+            <p id="benefits" class="highlight"></p>
+        </div>
+    </div>
+
+    <script>
+        function updateOptions() {
+            const category = document.querySelector('input[name="category"]:checked')?.value;
+            const subcategory = document.getElementById('subcategory');
+            const options = document.getElementById('subcategoryOptions');
+            const extras = document.getElementById('extras');
+
+            subcategory.style.display = 'block';
+            options.innerHTML = '<option value="" disabled selected>აირჩიეთ</option>';
+            extras.style.display = 'none';
+
+            if (category === 'PlayStation') {
+                options.innerHTML += `<option value="Basic">Basic</option>`;
+                options.innerHTML += `<option value="VIP ROOMS">VIP ROOMS</option>`;
+            } else if (category === 'PC') {
+                options.innerHTML += `<option value="Premium">Premium</option>`;
+                options.innerHTML += `<option value="Pro">Pro</option>`;
+                options.innerHTML += `<option value="Standard">Standard</option>`;
+            }
+
+            document.getElementById('totalPrice').innerText = '0₾';
+            document.getElementById('subtotal').innerText = '0₾';
+            document.getElementById('discountWrapper').style.display = 'none';
+            document.getElementById('benefits').innerText = '';
+        }
+
+        function updateExtras() {
+            const subcategory = document.getElementById('subcategoryOptions').value;
+            const extras = document.getElementById('extras');
+            const computers = document.getElementById('computers');
+            const hours = document.getElementById('hours');
+            const unitsLabel = document.getElementById('unitsLabel');
+
+            extras.style.display = 'block';
+
+            if (subcategory === 'Basic' || subcategory === 'VIP ROOMS') {
+                unitsLabel.innerText = subcategory === 'Basic' ? 'რამდენი PlayStation?' : 'რამდენი ოთახი?';
+            } else {
+                unitsLabel.innerText = 'რამდენი კომპიუტერი?';
+            }
+
+            computers.innerHTML = '';
+            hours.innerHTML = '';
+            let maxUnits = 1;
+            if (subcategory === 'Basic') maxUnits = 7;
+            if (subcategory === 'VIP ROOMS') maxUnits = 2;
+            if (subcategory === 'Premium') maxUnits = 7;
+            if (subcategory === 'Pro') maxUnits = 7;
+            if (subcategory === 'Standard') maxUnits = 10;
+
+            for (let i = 1; i <= maxUnits; i++) {
+                computers.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+
+            for (let i = 1; i <= 17; i++) {
+                hours.innerHTML += `<option value="${i}">${i} საათი</option>`;
+            }
+
+            updatePrice();
+        }
+
+        function updatePrice() {
+            const category = document.querySelector('input[name="category"]:checked')?.value;
+            const subcategory = document.getElementById('subcategoryOptions').value;
+            const hours = parseInt(document.getElementById('hours').value) || 1;
+            const computers = parseInt(document.getElementById('computers').value) || 1;
+            let price = 0;
+            let subtotal = 0;
+            let discount = 0;
+            let benefits = '';
+
+            if (category === 'PlayStation') {
+                if (subcategory === 'Basic') {
+                    price = 8 * hours * computers;
+                    subtotal = price;
+                    benefits = hours >= 2 ? `2+ საათისთვის ${computers * 2} უფასო სლაში` : '';
+                } else if (subcategory === 'VIP ROOMS') {
+                    subtotal = 25 * hours * computers;
+                    if (hours === 3) {
+                        price = 65 * computers;
+                    } else if (hours > 3) {
+                        price = (65 + (hours - 3) * 25) * computers;
+                    } else if (hours === 2) {
+                        price = 45 * computers;
+                    } else {
+                        price = 25 * hours * computers;
+                    }
+                    discount = subtotal - price;
+                    benefits = hours >= 2 ? 'უფასო სლაში.' : '';
+                }
+            }
+
+            if (category === 'PC') {
+                if (subcategory === 'Premium') {
+                    if (hours === 3) {
+                        price = 27 * computers;
+                        subtotal = 30 * computers;
+                    } else if (hours === 5) {
+                        price = 40 * computers;
+                        subtotal = 50 * computers;
+                    } else if (hours > 3 && hours < 5) {
+                        price = (27 + (hours - 3) * 10) * computers;
+                        subtotal = hours * 10 * computers;
+                    } else if (hours > 5) {
+                        price = (40 + (hours - 5) * 10) * computers;
+                        subtotal = hours * 10 * computers;
+                    } else {
+                        price = 10 * hours * computers;
+                        subtotal = price;
+                    }
+                    discount = subtotal - price;
+                    benefits = hours >= 2 ? 'უფასო სლაში ან ცხელი სასმელი.' : '';
+                } else if (subcategory === 'Pro') {
+                    if (hours === 3) {
+                        price = 22 * computers;
+                        subtotal = 24 * computers;
+                    } else if (hours === 5) {
+                        price = 35 * computers;
+                        subtotal = 40 * computers;
+                    } else if (hours > 3 && hours < 5) {
+                        price = (22 + (hours - 3) * 8) * computers;
+                        subtotal = hours * 8 * computers;
+                    } else if (hours > 5) {
+                        price = (35 + (hours - 5) * 8) * computers;
+                        subtotal = hours * 8 * computers;
+                    } else {
+                        price = 8 * hours * computers;
+                        subtotal = price;
+                    }
+                    discount = subtotal - price;
+                    benefits = hours >= 2 ? 'უფასო სლაში ან ცხელი სასმელი.' : '';
+                } else if (subcategory === 'Standard') {
+                    price = 6 * hours * computers;
+                    subtotal = price;
+                    discount = 0;
+                    benefits = hours >= 2 ? 'უფასო სლაში.' : '';
+                }
+            }
+
+            document.getElementById('totalPrice').innerText = `${price.toFixed(2)}₾`;
+            document.getElementById('subtotal').innerText = `${subtotal.toFixed(2)}₾`;
+
+            if (discount > 0) {
+                document.getElementById('discountWrapper').style.display = 'block';
+                document.getElementById('discount').innerText = `- ${discount.toFixed(2)}₾`;
+            } else {
+                document.getElementById('discountWrapper').style.display = 'none';
+            }
+
+            document.getElementById('benefits').innerText = benefits;
+        }
+    </script>
+</body>
+</html>
